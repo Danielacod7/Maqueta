@@ -1,0 +1,442 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Aparato Reproductor Masculino 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: visor 3D a pantalla completa con panel de partes acoplado (lateral en escritorio, hoja inferior en móvil) */
+:root{
+  --bg:#060b12; --panel:#0b1420; --line:#16283a; --fg:#d9e7f2; --muted:#7f97ab;
+  --accent:#37e0ff; --accent2:#7cf7c9;
+  --display:"Chakra Petch",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden}
+.app{height:100%;display:grid;grid-template-columns:1fr}
+.stage{position:relative;min-width:0;overflow:hidden;
+  background:radial-gradient(ellipse at 45% 40%,#0d2233 0%,var(--bg) 70%)}
+#c{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+#c:active{cursor:grabbing}
+.hud{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));right:16px;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;pointer-events:none}
+.hud h1{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase;margin:0 12px 0 0;
+  color:var(--fg);text-wrap:balance}
+.hud h1 span{color:var(--accent)}
+.btns{display:flex;flex-wrap:wrap;gap:6px;pointer-events:auto}
+.btn{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--fg);background:rgba(11,20,32,.8);
+  border:1px solid var(--line);border-radius:6px;padding:7px 11px;cursor:pointer;backdrop-filter:blur(6px)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.on{border-color:var(--accent);color:var(--bg);background:var(--accent)}
+.btn:focus-visible,.part:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.hint{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));right:16px;
+  font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+#leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#leaders{filter:drop-shadow(0 0 1px rgba(0,0,0,.9))}
+#leaders line{stroke:rgba(230,238,245,.85);stroke-width:1}
+#leaders line.sel{stroke:var(--accent);stroke-width:1.5}
+#leaders line.dim,#leaders circle.dim{opacity:.2}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;font-family:var(--body);font-weight:600;font-size:13px;line-height:18px;
+  color:var(--fg);pointer-events:auto;cursor:pointer;transition:opacity .2s,color .2s;padding:0 6px;border-radius:4px;background:rgba(6,11,18,.72)}
+.lbl:hover{color:var(--accent)}
+.lbl.sel{color:var(--accent)}
+.lbl.dim{opacity:.3}
+.hide-labels .lbl,.hide-labels #leaders{display:none}
+@media (max-width:760px){.lbl{font-size:10.5px;line-height:14px}}
+
+aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;
+  padding-right:max(0px,env(safe-area-inset-right,0px))}
+.info{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+.info h2{font-family:var(--display);font-weight:600;font-size:24px;margin:6px 0 8px;letter-spacing:.02em;text-wrap:balance}
+.info p{margin:0;line-height:1.55;color:var(--muted);font-size:14px}
+.list{overflow:auto;padding:10px;display:grid;gap:4px;align-content:start}
+.part{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;
+  border-radius:6px;padding:8px 10px;color:var(--fg);font-family:var(--body);font-size:14px;cursor:pointer}
+.part i{width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.part span{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+.part:hover{background:rgba(55,224,255,.06)}
+.part.sel{border-color:var(--accent);background:rgba(55,224,255,.1)}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr;grid-template-rows:1fr}
+  aside{border-left:0;border-top:1px solid var(--line);padding-left:max(0px,env(safe-area-inset-left,0px))}
+  .info{padding:12px 16px}
+  .info h2{font-size:19px;margin:4px 0 4px}
+  .info p{font-size:13px}
+  .list{grid-template-columns:1fr 1fr}
+  .hud h1{font-size:15px;width:100%}
+  .hint{display:none}
+}
+aside[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.lbl{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="c"></canvas>
+    <svg id="leaders"></svg>
+    <div id="labels"></div>
+    <div class="hud">
+      <h1>Aparato reproductor <span>masculino</span></h1>
+      <div class="btns">
+        <button class="btn" id="rst">Restablecer</button>
+      </div>
+    </div>
+  </div>
+  <aside hidden>
+    <div class="info">
+      <div class="tag" id="itag">Modelo anatómico · 15 estructuras</div>
+      <h2 id="ititle">Selecciona una parte</h2>
+      <p id="itext">Gira el modelo y toca cualquier estructura o su nombre en la lista para resaltarla y ver su función.</p>
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const canvas=document.getElementById('c'), stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,0.1,100);
+const CT=V(0.7,-0.45,0);
+camera.position.set(CT.x,CT.y,15.5);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.08;
+controls.minDistance=4; controls.maxDistance=24; controls.enablePan=true;
+controls.target.copy(CT);
+
+scene.add(new THREE.HemisphereLight(0xfff4ec,0x10202c,.85));
+const d1=new THREE.DirectionalLight(0xffffff,.95); d1.position.set(-3,6,9); scene.add(d1);
+const d2=new THREE.DirectionalLight(0x9fe8ff,.45); d2.position.set(6,-3,-7); scene.add(d2);
+const d3=new THREE.DirectionalLight(0xffffff,.35); d3.position.set(-8,0,-2); scene.add(d3);
+
+// rejilla holográfica
+const FLOOR=-4.6;
+const grid=new THREE.GridHelper(18,36,0x1d6f85,0x0f2a38); grid.position.set(CT.x,FLOOR,0);
+grid.material.transparent=true; grid.material.opacity=.4; scene.add(grid);
+const ring=new THREE.Mesh(new THREE.RingGeometry(3.9,3.95,96),new THREE.MeshBasicMaterial({color:0x37e0ff,transparent:true,opacity:.35,side:THREE.DoubleSide}));
+ring.rotation.x=-Math.PI/2; ring.position.set(CT.x,FLOOR+.01,0); scene.add(ring);
+
+// ---------- utilidades de geometría ----------
+function curve(pts){return new THREE.CatmullRomCurve3(pts.map(p=>V(...p)))}
+// tubo de radio variable: rf(t) da el radio en cada punto del recorrido
+function vtube(pts,rf,seg,rad){
+  seg=seg||100; rad=rad||24; const c=curve(pts);
+  const g=new THREE.TubeGeometry(c,seg,1,rad,false), pos=g.attributes.position, v=new THREE.Vector3();
+  for(let i=0;i<=seg;i++){const ctr=c.getPointAt(i/seg), r=rf(i/seg);
+    for(let j=0;j<=rad;j++){const k=i*(rad+1)+j; v.fromBufferAttribute(pos,k).sub(ctr).multiplyScalar(r).add(ctr); pos.setXYZ(k,v.x,v.y,v.z)}}
+  g.computeVertexNormals(); return g;
+}
+function ell(rx,ry,rz){const g=new THREE.SphereGeometry(1,56,40);g.scale(rx,ry,rz);return g}
+function lathe(prof,seg){return new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[0],p[1])),seg||64)}
+const smooth=(a,b,t)=>{t=Math.min(1,Math.max(0,(t-a)/(b-a)));return t*t*(3-2*t)};
+
+const parts=[];
+const byIdTmp=id=>parts.find(p=>p.id===id);
+function mat(color,opacity){
+  return new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.1,roughness:.55,metalness:.05,
+    transparent:true,opacity:opacity??1,depthWrite:(opacity??1)>.6,side:THREE.DoubleSide});
+}
+// geoms: [geometría, posición, rotación, color opcional]
+function add(id,name,color,geoms,anchor,desc,opacity){
+  const group=new THREE.Group(), cache={}, mats=[];
+  geoms.forEach(([g,pos,rot,col])=>{
+    const c=col||color; if(!cache[c]){cache[c]=mat(c,opacity);mats.push(cache[c])}
+    const mesh=new THREE.Mesh(g,cache[c]); if(pos)mesh.position.set(...pos); if(rot)mesh.rotation.set(...rot);
+    mesh.userData.id=id; group.add(mesh)});
+  scene.add(group);
+  parts.push({id,name,color,group,mats,baseOp:opacity??1,anchor:V(...anchor),desc});
+}
+const Z=0.42; // separación lateral de estructuras pares
+
+// ---------- contexto: silueta del cuerpo y columna (no seleccionable) ----------
+const ctx=new THREE.Group(); scene.add(ctx);
+// columna lumbar, sacro y cóccix
+const bone=new THREE.MeshStandardMaterial({color:'#e9dcbc',transparent:true,opacity:.55,depthWrite:false,roughness:.6});
+const disc=new THREE.MeshStandardMaterial({color:'#9cc6dc',transparent:true,opacity:.5,depthWrite:false});
+[[2.62,3.15,-.16],[2.82,2.38,-.14],[2.97,1.62,-.1],[3.06,0.86,-.06]].forEach(([x,y,r])=>{
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.6,32),bone); b.position.set(x,y,0); b.rotation.z=r; ctx.add(b);
+  const d=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.12,32),disc); d.position.set(x-.04,y+.38,0); d.rotation.z=r; ctx.add(d);
+});
+const sac=new THREE.Mesh(vtube([[3.08,0.45,0],[3.05,-0.2,0],[2.88,-0.8,0],[2.6,-1.25,0]],t=>.42-.3*t,40),bone); ctx.add(sac);
+// hueso púbico (sínfisis) delante de la vejiga
+// hueso púbico (sínfisis): óvalo alargado azul grisáceo, sólido, más ancho arriba, inclinado y apoyado en la cara anterior e inferior de la vejiga
+const pubG=lathe([[0,-0.55],[0.08,-0.52],[0.15,-0.4],[0.2,-0.18],[0.23,0.08],[0.23,0.3],[0.19,0.45],[0.1,0.53],[0,0.55]],48); pubG.scale(1,1,1.5);
+{const pos=pubG.attributes.position, col=[], a=new THREE.Color('#cfe3ee'), b=new THREE.Color('#86aec6'), c=new THREE.Color();
+ for(let i=0;i<pos.count;i++){const r=Math.hypot(pos.getX(i),pos.getZ(i)/1.5)/0.23; c.copy(b).lerp(a,Math.max(0,1-r)*1.3+.15); col.push(c.r,c.g,c.b)}
+ pubG.setAttribute('color',new THREE.Float32BufferAttribute(col,3));}
+const pub=new THREE.Mesh(pubG,new THREE.MeshStandardMaterial({color:'#ffffff',vertexColors:true,roughness:.45,metalness:.05}));
+pub.position.set(-1.12,0.44,0); pub.rotation.z=0.5; pub.scale.setScalar(1.25); ctx.add(pub);
+
+// ---------- órganos (coordenadas calcadas de la imagen de referencia) ----------
+add('vejiga','Vejiga','#a5432f',[[lathe([[0,-1.02],[0.18,-1.0],[0.5,-0.9],[0.82,-0.6],[1.0,-0.15],[1.02,0.3],[0.9,0.7],[0.62,0.95],[0.3,1.04],[0,1.06]]),[-0.12,1.2,0],[0,0,-0.18]]],
+ [-0.5,1.9,0.95],
+ 'Órgano muscular hueco que almacena la orina producida por los riñones hasta su expulsión por la uretra.');
+add('prostata','Próstata','#d77a6c',[[ell(0.42,0.36,0.44),[0.2,-0.22,0],[0,0,0.4]]],[0.2,-0.2,0.5],
+ 'Glándula del tamaño de una nuez situada bajo la vejiga. Rodea la uretra y produce un líquido que nutre y protege a los espermatozoides.');
+// vesícula seminal: saco liso y redondeado, pegado a la pared posterior e inferior de la vejiga;
+// solo su conducto (eyaculador) baja en rojo desde su extremo inferior hasta la uretra dentro de la próstata
+const sv=z=>{const g=ell(0.23,0.64,0.34), pos=g.attributes.position;
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i), y=pos.getY(i); pos.setX(i,x-0.1*(1-Math.pow(y/0.64,2)))} // se curva siguiendo la vejiga
+  g.computeVertexNormals(); g.rotateZ(0.32); g.translate(1.2,0.86,z); return g};
+const ejac=vtube([[1.36,0.32,0],[1.12,0.16,0],[0.82,0.08,0],[0.55,0.06,0],[0.36,-0.1,0],[0.18,-0.3,0]],()=>.035,60,8);
+add('vesicula','Vesícula seminal','#7a5a3c',[[sv(Z*0.9)],[sv(-Z*0.9)],[ejac,null,null,'#c8302a']],[1.05,1.0,0.5],
+ 'Par de glándulas detrás de la vejiga. Producen la mayor parte del líquido seminal, rico en fructosa, que da energía a los espermatozoides.');
+{const ch=byIdTmp('vesicula').group.children[2]; ch.material.depthTest=false; ch.material.emissiveIntensity=.35; ch.renderOrder=10;}
+// recto: forma continua más larga. Sube por delante de la columna, se ensancha en la ampolla (pera) y se estrecha en el canal anal hasta la piel.
+// Lleva una ventana abierta en la ampolla que deja ver su interior, como el corte de la imagen.
+const rectPath=[[1.95,3.55,0],[2.1,2.65,0],[2.2,1.75,0],[2.15,0.85,0],[1.98,0.05,0],[1.92,-0.55,0],[1.98,-1.25,0],[2.05,-1.7,0],[2.08,-2.07,0]];
+const rectC=curve(rectPath);
+const rectR=t=>{const y=rectC.getPointAt(t).y; const amp=.33*Math.exp(-Math.pow((y+0.3)/0.62,2));
+  return Math.max(.075,(.19+amp)*(1-.62*smooth(0.95,1.5,-y))-.02*smooth(1.85,2.07,-y))};
+const RS=320, RR=72;
+const rectOut=vtube(rectPath,rectR,RS,RR), rectIn=vtube(rectPath,t=>rectR(t)*.97,RS,RR);
+{ // abrir la ventana ovalada en la cara visible de la ampolla
+  const pos=rectOut.attributes.position, idx=rectOut.index.array, keep=[], v=new THREE.Vector3();
+  const inWin=k=>{const i=Math.floor(k/(RR+1)), ctr=rectC.getPointAt(i/RS); v.fromBufferAttribute(pos,k).sub(ctr);
+    const dz=v.z/Math.max(1e-4,v.length()), q=(ctr.y+0.3)/0.58; return dz>0.25+0.75*q*q};
+  for(let f=0;f<idx.length;f+=3){if(!(inWin(idx[f])&&inWin(idx[f+1])&&inWin(idx[f+2])))keep.push(idx[f],idx[f+1],idx[f+2])}
+  rectOut.setIndex(keep);
+  // interior: pared clara con pliegues, como la mucosa que se ve en la imagen
+  const p2=rectIn.attributes.position, col=[], c1=new THREE.Color('#b9784a'), c2=new THREE.Color('#7a3a20'), c=new THREE.Color();
+  for(let k=0;k<p2.count;k++){const j=k%(RR+1), i=Math.floor(k/(RR+1)); const s=.5+.5*Math.cos(j/RR*Math.PI*2*9+i*.02);
+    c.copy(c1).lerp(c2,s*.6); col.push(c.r,c.g,c.b)}
+  rectIn.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+}
+add('recto','Recto','#7d3b22',[[rectOut],[rectIn,null,null,'#ffffff']],[1.72,-0.35,0.45],
+ 'Porción final del intestino grueso. Se sitúa detrás de la próstata y la vejiga, sobre la curva del sacro; almacena las heces antes de su expulsión.');
+{const g=byIdTmp('recto').group.children; g[0].material.side=THREE.FrontSide;
+  g[1].material.side=THREE.BackSide; g[1].material.vertexColors=true; g[1].material.emissiveIntensity=0; g[1].material.roughness=.85;
+  g[0].material.needsUpdate=g[1].material.needsUpdate=true;}
+
+// ano: esfínter alrededor del canal, músculos del piso pélvico en "V" (el posterior llega hasta la punta del cóccix) y orificio en la piel
+const band=pts=>vtube(pts,t=>.075+.03*Math.sin(t*Math.PI),60,16);
+const flat=g=>{const pos=g.attributes.position; for(let i=0;i<pos.count;i++)pos.setZ(i,pos.getZ(i)*3.2); g.computeVertexNormals(); return g};
+const vFront=flat(band([[1.2,-0.95,0],[1.55,-1.3,0],[1.85,-1.65,0],[1.98,-1.9,0]]));
+const vBack=flat(band([[2.6,-1.22,0],[2.45,-1.45,0],[2.25,-1.7,0],[2.16,-1.9,0]]));
+const sphG=lathe([[0.09,-0.16],[0.15,-0.15],[0.18,0],[0.15,0.15],[0.09,0.16]],48);
+const slit=new THREE.TorusGeometry(0.08,0.035,14,40); slit.rotateX(Math.PI/2); slit.scale(1.4,1,0.8);
+const hole=new THREE.CircleGeometry(0.07,32); hole.rotateX(Math.PI/2); hole.scale(1.4,1,0.8);
+// músculos del piso pélvico: dos bandas rojas que pasan por detrás del recto y forman una V hasta el ano;
+// la delantera se une al bulbo del pene y la trasera a la punta del cóccix
+{const mm=new THREE.MeshStandardMaterial({color:'#c8463a',emissive:'#c8463a',emissiveIntensity:.12,roughness:.55});
+ const flat=g=>{const pos=g.attributes.position; for(let i=0;i<pos.count;i++)pos.setZ(i,pos.getZ(i)*2.2); g.computeVertexNormals(); return g};
+ [[[1.3,-0.92,-0.1],[1.6,-1.08,-0.4],[1.8,-1.38,-0.45],[1.96,-1.66,-0.35],[2.04,-1.82,-0.15]],
+  [[2.62,-1.24,0],[2.48,-1.34,-0.35],[2.34,-1.5,-0.45],[2.2,-1.68,-0.35],[2.11,-1.82,-0.15]]].forEach(pts=>{
+   const g=vtube(pts,t=>.07,60,14), pos=g.attributes.position, c=curve(pts), v=new THREE.Vector3();
+   for(let i=0;i<=60;i++){const ctr=c.getPointAt(i/60); for(let j=0;j<=14;j++){const k=i*15+j; v.fromBufferAttribute(pos,k).sub(ctr); v.z*=2.2; pos.setXYZ(k,ctr.x+v.x,ctr.y+v.y,ctr.z+v.z)}}
+   g.computeVertexNormals(); ctx.add(new THREE.Mesh(g,mm));});}
+// ano: el final del recto, un canal corto que se estrecha hasta la piel, con su orificio
+const anCanal=vtube([[2.04,-1.62,0],[2.06,-1.85,0],[2.08,-2.08,0]],t=>.105-.03*t,30,24);
+add('ano','Ano','#8a3a26',[[anCanal],
+   [slit,[2.08,-2.07,0],null,'#5e2117'],[hole,[2.08,-2.075,0],null,'#2a0c08']],
+ [2.08,-1.98,0.12],
+ 'Orificio final del aparato digestivo por donde se expulsan las heces. Es la salida del recto: un canal corto rodeado por el esfínter anal, que lo mantiene cerrado. Se ubica detrás del escroto.');
+add('bulbo','Glándula bulbouretral','#e2879a',[[ell(.12,.12,.12),[0.5,-0.5,0.22]],[ell(.12,.12,.12),[0.5,-0.5,-0.22]]],[0.5,-0.5,0.3],
+ 'También llamadas glándulas de Cowper. Liberan un líquido preseminal que lubrica y neutraliza la acidez de la uretra.');
+
+// pene: raíz (bulbo esponjoso), cuerpo colgante y cuerpo cavernoso azulado como en la imagen
+// cuerpo esponjoso + bulbo del pene en UNA sola malla: tubo delgado bajo el pene que se ensancha sin cortes hasta el bulbo,
+// con sección más alta que ancha y extremo posterior redondeado
+function spongyGeo(){
+  const pts=[[-2.3,-3.0,0],[-2.17,-2.45,0],[-1.97,-1.9,0],[-1.68,-1.42,0],[-1.25,-1.17,0],[-0.6,-1.13,0],[-0.1,-1.15,0],[0.35,-1.1,0],[0.75,-1.0,0],[1.05,-0.96,0],[1.32,-1.0,0]];
+  const c=curve(pts), seg=260, rad=48, g=new THREE.TubeGeometry(c,seg,1,rad,false), pos=g.attributes.position, v=new THREE.Vector3(), ip=new THREE.Vector3();
+  for(let i=0;i<=seg;i++){const t=i/seg, ctr=c.getPointAt(t);
+    const grow=smooth(.58,.82,t), cap=t<.9?1:Math.sqrt(Math.max(0,1-Math.pow((t-.9)/.1,2)));
+    const ry=(.19+.36*grow)*cap, rz=(.19+.2*grow)*cap, lift=.06*grow; // se eleva un poco hacia la próstata
+    for(let j=0;j<=rad;j++){const k=i*(rad+1)+j; v.fromBufferAttribute(pos,k).sub(ctr);
+      ip.set(v.x,v.y,0); const z=v.z; ip.multiplyScalar(ry); pos.setXYZ(k,ctr.x+ip.x,ctr.y+ip.y+lift*(ip.y>0?1.6:0.4),z*rz)}}
+  g.computeVertexNormals(); return g;
+}
+const shaftPts=[[0.95,-1.0,0],[0.3,-0.98,0],[-0.5,-0.92,0],[-1.3,-1.0,0],[-1.9,-1.5,0],[-2.22,-2.25,0],[-2.36,-2.85,0]];
+// cuerpo cavernoso: tubo sólido gris azulado en la parte superior del pene, desde la raíz bajo la próstata hasta el glande;
+// en la mitad delantera lleva las bandas claras del tejido eréctil, como en la imagen
+function cavGeo(){
+  const pts=[[0.15,-0.7,0],[-0.5,-0.68,0],[-1.15,-0.74,0],[-1.68,-1.0,0],[-2.04,-1.55,0],[-2.27,-2.2,0],[-2.4,-2.78,0]];
+  const c=curve(pts), seg=240, rad=36;
+  const g=vtube(pts,t=>{const r=.25; return t<.05?r*Math.sqrt(Math.max(0,1-Math.pow((.05-t)/.05,2))):r},seg,rad);
+  const pos=g.attributes.position, col=[], base=new THREE.Color('#8d99a6'), lt=new THREE.Color('#d6e3ee'), dk=new THREE.Color('#7f95a8'), cc=new THREE.Color();
+  for(let i=0;i<=seg;i++){const t=i/seg, band=smooth(.6,.65,t), s=.5+.5*Math.sin(t*seg/240*Math.PI*2*16);
+    for(let j=0;j<=rad;j++){cc.copy(base).lerp(s>.45?lt:dk,band*(s>.45?.9:.5)); col.push(cc.r,cc.g,cc.b)}}
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); return g;
+}
+add('pene','Pene','#f0b29a',[
+   [vtube(shaftPts,t=>.34+.18*smooth(.15,.45,t)-.04*smooth(.85,1,t),120)],
+   [cavGeo(),null,null,'#ffffff'],
+   [spongyGeo(),[0,-0.06,0],null,'#e07a68']],
+ [-2.2,-1.5,0.3],
+ 'Órgano copulador y urinario. Está formado por tejido eréctil (cuerpos cavernosos y esponjoso) que se llena de sangre durante la erección. Su raíz, el bulbo del pene, es la masa rosada que se ancla detrás, entre el escroto y el ano.',0.45);
+{const ch=byIdTmp('pene').group.children; [ch[1],ch[2]].forEach(g=>{g.material.userData.base=1; g.material.opacity=1; g.material.depthWrite=true;});
+ ch[1].material.vertexColors=true; ch[1].material.emissiveIntensity=.04; ch[1].material.needsUpdate=true;}
+// uretra: línea roja que se ve a través de los órganos (como en el corte de la imagen), desde la vejiga, cruzando la próstata
+// y el bulbo, por debajo del pene hasta la abertura en la punta del glande
+add('uretra','Uretra','#c8302a',[[vtube([[-0.2,1.5,0],[-0.08,0.85,0],[0.08,0.3,0],[0.18,-0.25,0],[0.22,-0.72,0],[-0.1,-1.06,0],[-0.7,-1.12,0],[-1.25,-1.15,0],[-1.68,-1.4,0],[-1.98,-1.92,0],[-2.14,-2.3,0],[-2.2,-2.75,0],[-2.26,-3.2,0],[-2.38,-3.55,0],[-2.56,-3.7,0]],
+   ()=>.04,260,10)]],[-0.8,-1.13,0.25],
+ 'Conducto que va de la vejiga a la punta del pene. Transporta tanto la orina como el semen hacia el exterior.');
+{const m=byIdTmp('uretra').mats[0]; m.depthTest=false; m.emissiveIntensity=.35; byIdTmp('uretra').group.children.forEach(c=>c.renderOrder=10);}
+const TIP=-0.21; // inclinación del extremo del pene
+add('glande','Glande','#e5897a',[[(()=>{const g=lathe([[0,-0.58],[0.07,-0.55],[0.16,-0.45],[0.25,-0.28],[0.32,-0.08],[0.37,0.1],[0.41,0.22],[0.43,0.29],[0.39,0.34],[0.33,0.38],[0.33,0.5]],72); g.scale(0.78,0.95,0.8); return g})(),[-2.56,-3.08,0],[0,0,TIP]]],[-2.55,-2.95,0.3],
+ 'Extremo ensanchado y muy sensible del pene. En su punta se encuentra la abertura de la uretra.');
+add('prepucio','Prepucio','#e79a82',[[(()=>{const g=lathe([[0.1,-0.56],[0.2,-0.48],[0.3,-0.3],[0.38,-0.08],[0.44,0.12],[0.48,0.3],[0.5,0.45],[0.5,0.6]],72); g.scale(1,1,0.92); return g})(),[-2.4,-3.12,0],[0,0,TIP]]],[-2.76,-3.25,0.12],
+ 'Pliegue de piel que cubre y protege el glande. Puede retraerse; se retira en la circuncisión.',0.62);
+const meat=new THREE.TorusGeometry(0.075,0.035,12,32); meat.rotateX(Math.PI/2);
+add('abertura','Abertura de uretra','#7a2a24',[[meat,[-2.6,-3.68,0],[0,0,TIP]]],[-2.6,-3.68,0.08],
+ 'Meato urinario: orificio en la punta del glande por donde salen la orina y el semen.');
+
+// testículos, epidídimo y escroto
+add('testiculos','Testículos','#8e9b86',[[ell(0.36,0.5,0.33),[-0.89,-3.16,Z]],[ell(0.36,0.5,0.33),[-0.89,-3.16,-Z]]],[-0.95,-3.15,0.74],
+ 'Glándulas sexuales masculinas (gónadas). Producen los espermatozoides y la hormona testosterona.');
+add('escroto','Escroto','#ebb39a',[[lathe([[0,-1.05],[0.35,-1.0],[0.62,-0.75],[0.74,-0.3],[0.7,0.2],[0.56,0.6],[0.42,0.95],[0.38,1.1]],64),[-0.85,-2.95,0],[0,0,0.12]]],[-1.42,-3.55,0.45],
+ 'Bolsa de piel y músculo que contiene a los testículos fuera del abdomen, manteniéndolos a una temperatura ligeramente menor a la corporal.',0.28);
+// el escroto se ensancha en profundidad para alojar ambos testículos
+parts[parts.length-1].group.children[0].scale.set(1,1,1.35);
+// epidídimo: tejido rosado y abultado que envuelve la parte superior y posterior del testículo como una capucha
+const epi=z=>{const g=vtube([[-1.12,-2.72,z],[-0.92,-2.6,z],[-0.68,-2.62,z],[-0.52,-2.8,z],[-0.46,-3.08,z],[-0.5,-3.38,z],[-0.6,-3.6,z]],
+   t=>(.2-.09*t)*Math.min(1,Math.sin(Math.PI*Math.min(1,t*1.02))*4)*(1+.08*Math.sin(t*Math.PI*11)),120,28);
+  const pos=g.attributes.position; for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),zz=pos.getZ(i);
+    const n=1+.035*Math.sin(x*17+y*7)*Math.cos(y*13+zz*9); pos.setXYZ(i,x,y,z+(zz-z)*1.25*n)} g.computeVertexNormals(); return g};
+add('epididimo','Epidídimo','#dc5a62',[[epi(Z)],[epi(-Z)]],[-0.5,-3.05,0.6],
+ 'Tubo enrollado sobre la parte posterior de cada testículo donde los espermatozoides maduran y se almacenan.');
+const def=z=>vtube([[-0.55,-3.6,z],[-0.33,-3.0,z*1.05],[-0.6,-2.2,z*1.2],[-1.1,-1.6,z*1.5],[-1.15,-0.2,z*2.2],[-1.1,1.5,z*2.4],[-0.8,2.4,z*2.2],[0,2.7,z*1.8],[0.78,2.38,z*1.5],[1.0,1.78,z*1.55],[0.98,1.2,z*1.85],[0.9,0.72,z*1.85],[0.74,0.36,z*1.3],[0.55,0.06,z*0.3]],()=>.055,200,12);
+add('deferente','Conducto deferente','#d9645f',[[def(Z)],[def(-Z)]],[-1.15,0.9,1.05],
+ 'Conducto que lleva los espermatozoides desde el epidídimo, rodea la vejiga y se une con la vesícula seminal para formar el conducto eyaculador.');
+
+// líneas de señalización de la imagen de referencia: una del hueso púbico a la glándula bulbouretral
+// y otra del bulbo a la punta del cóccix, pasando por detrás del recto
+const guideMat=new THREE.MeshStandardMaterial({color:'#c8302a',emissive:'#c8302a',emissiveIntensity:.35,roughness:.6});
+[[[-1.02,0.02,0.45],[-0.4,-0.2,0.56],[0.1,-0.38,0.52],[0.48,-0.5,0.32]],
+ [[1.42,-0.82,0],[1.85,-0.98,-0.55],[2.25,-1.12,-0.45],[2.58,-1.24,0]]].forEach(pts=>{
+  scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve(pts),60,0.035,10,false),guideMat));
+});
+// ---------- interfaz ----------
+const list=document.getElementById('list'), labels=document.getElementById('labels');
+const SVGNS='http://www.w3.org/2000/svg', leaders=document.getElementById('leaders'), hud=document.querySelector('.hud');
+const itag=document.getElementById('itag'), ititle=document.getElementById('ititle'), itext=document.getElementById('itext');
+const order=['vejiga','prostata','uretra','pene','glande','prepucio','abertura','escroto','testiculos','epididimo','vesicula','deferente','recto','bulbo','ano'];
+const byId={}; parts.forEach(p=>byId[p.id]=p);
+order.forEach((id,i)=>{
+  const p=byId[id];
+  const b=document.createElement('button'); b.className='part'; b.id='p-'+id; b.style.setProperty('--c',p.color);
+  b.innerHTML='<i></i>'+p.name+'<span>'+String(i+1).padStart(2,'0')+'</span>';
+  b.onclick=()=>select(id,true); list.appendChild(b); p.btn=b; p.num=i+1;
+  const l=document.createElement('div'); l.className='lbl'; l.textContent=p.name;
+  l.onclick=()=>select(id,true); labels.appendChild(l); p.lbl=l;
+  const ln=document.createElementNS(SVGNS,'line'); leaders.appendChild(ln); p.line=ln;
+  const dot=document.createElementNS(SVGNS,'circle'); dot.setAttribute('r','2.6'); dot.setAttribute('fill',p.color);
+  dot.setAttribute('stroke','#ffffff'); dot.setAttribute('stroke-width','.8'); leaders.appendChild(dot); p.dot=dot;
+});
+
+let selected=null, camGoal=null, tgtGoal=null;
+function select(id,focus){
+  if(selected===id){id=null}
+  selected=id;
+  parts.forEach(p=>{
+    const on=!id||p.id===id;
+    p.mats.forEach(m=>{const b=m.userData.base??p.baseOp;
+      const op=id?(p.id===id?Math.max(b,.85):b*.22):b;
+      m.opacity=op;m.depthWrite=op>.6;m.emissiveIntensity=p.id===id?.3:.1});
+    p.btn.classList.toggle('sel',p.id===id);
+    p.lbl.classList.toggle('sel',p.id===id);
+    p.lbl.classList.toggle('dim',!on);
+    p.line.setAttribute('class',p.id===id?'sel':(!on?'dim':''));
+    p.dot.setAttribute('class',!on?'dim':'');
+  });
+  if(!id){{const d=camera.position.clone().sub(controls.target).normalize(); tgtGoal=CT.clone(); camGoal=CT.clone().add(d.multiplyScalar(15.5));}
+    itag.textContent='Modelo anatómico · 15 estructuras';ititle.textContent='Selecciona una parte';
+    itext.textContent='Gira el modelo y toca cualquier estructura o su nombre en la lista para resaltarla y ver su función.';return}
+  const p=byId[id];
+  itag.textContent='Estructura '+String(p.num).padStart(2,'0')+' de 15';
+  ititle.textContent=p.name; itext.textContent=p.desc;
+  if(focus){
+    const dir=camera.position.clone().sub(controls.target).normalize();
+    tgtGoal=p.anchor.clone(); camGoal=p.anchor.clone().add(dir.multiplyScalar(7.5));
+  }
+}
+
+const views={lateral:V(0,0,15.5),frente:V(-15.5,0.4,0.01),otro:V(0,0,-15.5),atras:V(15.5,0.4,0.01)};
+document.getElementById('rst').onclick=()=>{select(null);tgtGoal=CT.clone();camGoal=views.lateral.clone().add(CT)};
+controls.addEventListener('start',()=>{camGoal=null;tgtGoal=null});
+
+// selección por clic en el modelo
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2(); let down=null;
+canvas.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
+canvas.addEventListener('pointerup',e=>{
+  if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;
+  const r=canvas.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const meshes=[];parts.forEach(p=>p.group.children.forEach(m=>meshes.push(m)));
+  const hits=ray.intersectObjects(meshes);
+  const solid=hits.find(h=>byId[h.object.userData.id].baseOp>.6); // prioriza órganos sobre envolturas
+  const hit=solid||hits[0];
+  if(hit)select(hit.object.userData.id,false);
+});
+
+function resize(){
+  const w=stage.clientWidth,h=stage.clientHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h;
+  camera.fov=w/h<0.9?52:38; camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize); resize();
+
+const tmp=new THREE.Vector3(); let t=0;
+function loop(){
+  requestAnimationFrame(loop); t+=0.016;
+  if(camGoal){camera.position.lerp(camGoal,.08);controls.target.lerp(tgtGoal,.08);
+    if(camera.position.distanceTo(camGoal)<.02){camGoal=null}}
+  controls.update();
+  ring.material.opacity=.25+Math.sin(t*1.5)*.1;
+  if(selected){byId[selected].mats.forEach(m=>m.emissiveIntensity=.28+Math.sin(t*4)*.1)}
+  renderer.render(scene,camera);
+  layoutLabels();
+}
+
+// etiquetas por fuera del modelo, en dos columnas, con líneas guía hacia cada estructura (como en la imagen)
+function layoutLabels(){
+  // distribución fija como en la imagen: columna izquierda, columna derecha y fila inferior, con espacio parejo
+  if(stage.classList.contains('hide-labels'))return;
+  const w=stage.clientWidth,h=stage.clientHeight;
+  parts.forEach(p=>{tmp.copy(p.anchor).project(camera); p.sx=(tmp.x+1)/2*w; p.sy=(1-tmp.y)/2*h; if(!p.wid)p.wid=p.lbl.offsetWidth});
+  // si el modelo se ve desde el otro lado, las columnas se intercambian para que las líneas no se crucen
+  const flip=byId.glande.sx>byId.recto.sx;
+  let minX=1e9,maxX=-1e9; parts.forEach(p=>{minX=Math.min(minX,p.sx);maxX=Math.max(maxX,p.sx)}); const reach=w<520?10:70;
+  const LEFT=['vejiga','prostata','uretra','pene','glande','prepucio','abertura'];
+  const RIGHT=['vesicula','deferente','recto','bulbo','ano'];
+  const BOTTOM=flip?['epididimo','testiculos','escroto']:['escroto','testiculos','epididimo'];
+  const narrow=w<520, pad=narrow?8:24, lh=narrow?14:18;
+  const top=hud.offsetTop+hud.offsetHeight+(narrow?14:28), rowY=h-(narrow?18:26);
+  const place=(p,lx,ly,ex,ey)=>{p.lbl.style.transform='translate('+lx+'px,'+ly+'px)';
+    p.line.setAttribute('x1',ex); p.line.setAttribute('y1',ey); p.line.setAttribute('x2',p.sx); p.line.setAttribute('y2',p.sy);
+    p.dot.setAttribute('cx',p.sx); p.dot.setAttribute('cy',p.sy)};
+  const colL=flip?RIGHT:LEFT, colR=flip?LEFT:RIGHT;
+  const bottomL=rowY-lh*2.2;
+  const doCol=(ids,side,y0,y1)=>{const step=ids.length>1?(y1-y0)/(ids.length-1):0;
+    ids.forEach((id,i)=>{const p=byId[id], cy=y0+i*step;
+      const lx=side==='L'?Math.max(pad,minX-reach-p.wid):Math.min(w-pad-p.wid,maxX+reach); const ex=side==='L'?lx+p.wid+4:lx-4;
+      place(p,lx,cy-lh/2,ex,cy)})};
+  const span=ids=>{const ys=ids.map(id=>byId[id].sy); return [Math.max(top,Math.min(...ys)),Math.min(bottomL,Math.max(...ys))]};
+  const fit=(ids,[a,b])=>{const need=(ids.length-1)*lh*1.8; if(b-a<need){const m=(a+b)/2; a=Math.max(top,m-need/2); b=Math.min(bottomL,a+need); a=Math.min(a,b-need)} return [a,b]};
+  doCol(colL,'L',...fit(colL,span(colL)));
+  doCol(colR,'R',...fit(colR,span(colR)));
+  // fila inferior centrada bajo el escroto
+  const gap=narrow?10:44, total=BOTTOM.reduce((a,id)=>a+byId[id].wid,0)+gap*(BOTTOM.length-1);
+  let x=Math.max(pad,Math.min(w-pad-total,byId.escroto.sx-total/2));
+  BOTTOM.forEach(id=>{const p=byId[id]; place(p,x,rowY-lh/2,x+p.wid/2,rowY-lh/2-3); x+=p.wid+gap});
+}
+const remeasure=()=>parts.forEach(p=>p.wid=0);
+addEventListener('resize',remeasure);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(remeasure);
+loop();
+})();
+</script>
+
+</body></html>
